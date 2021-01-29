@@ -1,0 +1,149 @@
+FUNCTION z_mgs_read_cr_entity.
+*"----------------------------------------------------------------------
+*"*"Local Interface:
+*"  IMPORTING
+*"     REFERENCE(IV_ENTITY) TYPE  USMD_ENTITY
+*"     REFERENCE(IV_CREQUEST) TYPE  USMD_CREQUEST
+*"     REFERENCE(IV_CRTYPE) TYPE  USMD_CREQUEST_TYPE
+*"  EXPORTING
+*"     REFERENCE(EV_MATERIAL) TYPE  BAPIBATCHKEY-MATERIAL
+*"
+*"
+*"      A function module to read a Change request and retrieve the material no.
+*"----------------------------------------------------------------------
+
+  DATA lv_model            TYPE usmd_model.
+  DATA lo_model_ext        TYPE REF TO if_usmd_model_ext.
+  DATA : lo_model           TYPE REF TO if_usmd_model.
+  DATA lt_data             TYPE usmd_ts_data_entity.
+  DATA ls_data             TYPE usmd_sx_data_entity.
+  DATA ls_entity           TYPE usmd_entity.
+  DATA ls_crtype        TYPE usmd_crequest_type.
+  DATA lt_entity           TYPE usmd_t_entity.
+  DATA lt_message         TYPE  usmd_t_message.
+  DATA : it_sel           TYPE usmd_ts_sel.
+
+  DATA :  ets_crequest_objkey  TYPE  usmd_ts_crequest_objkey.
+  DATA : ets_crequest_objkey_seqnr TYPE  usmd_ts_crequest_seqnr_objkey,
+         et_hrynode_chkey_fld      TYPE  usmd_t_hrynv_hrynod_chkey_fld.
+
+* Field-symbols is simply a place holder- a memory are will be assigned before execution
+  FIELD-SYMBOLS <ls_data> TYPE any.
+*WHILE 1 = 1 . ENDWHILE.
+
+* --Entity is the starting point and will always exist but...
+  IF iv_entity IS INITIAL.
+    RETURN.
+  ENDIF.
+
+  MOVE iv_entity TO ls_entity.
+  APPEND ls_entity TO lt_entity.
+
+* --Get the model using the CR entity type
+  SELECT SINGLE usmd_model
+         INTO lv_model
+         FROM  usmd110c WHERE
+         usmd_creq_type  = iv_crtype.
+
+* Ensuring the execution was successfull
+  IF sy-subrc <> 0.
+    RETURN.
+  ENDIF.
+
+  cl_usmd_model_ext=>get_instance(
+                     EXPORTING i_usmd_model = lv_model
+                     IMPORTING eo_instance  = lo_model_ext ).
+
+  IF lo_model_ext IS NOT BOUND.
+    RETURN.
+  ENDIF.
+
+* --Check if the model is BP
+  IF lv_model = 'MM'.
+*    lo_model_ext->read_entity_data_all(
+*                  EXPORTING i_fieldname       = 'MATERIAL'
+*                            if_active         = 'X'
+*                            i_crequest        = iv_crequest
+*                            it_entity_filter  = lt_entity
+*                  IMPORTING et_data_entity    = lt_data ).
+
+*  lo_model_exT->read_char_value(
+*    EXPORTING
+*      i_fieldname       =  'MATERIAL'
+*      it_sel            = IT_SEL
+**      if_edition_logic  = 'X'
+*      i_readmode        = '1'
+**      if_use_edtn_slice = 'X'
+*      if_no_flush       = 'X'
+*    IMPORTING
+*      et_data           = LT_DATA
+*      et_message        = LT_MESSAGE )
+*      .
+
+
+    DATA : io_model  TYPE REF TO if_usmd_model.
+    DATA : et_key_all TYPE usmd_ts_entity_data.
+
+    CALL METHOD cl_usmd_model=>get_instance
+      EXPORTING
+        i_usmd_model = lv_model
+      IMPORTING
+        eo_instance  = lo_model
+        et_message   = lt_message.
+
+** lo_model is set as the standard  SAP interface ..... if_usmd_model_CRquest is also a standard interface which contains method relation to CR's
+    lo_model->if_usmd_model_crequest~crequest_get_objlist(
+      EXPORTING
+        i_crequest                = iv_crequest
+      IMPORTING
+        ets_crequest_objkey       = ets_crequest_objkey
+        ets_crequest_objkey_seqnr =  ets_crequest_objkey_seqnr
+        et_hrynode_chkey_fld      =  et_hrynode_chkey_fld
+        et_message                =  lt_message  )
+        .
+    FIELD-SYMBOLS:
+      <ls_objkey> TYPE usmd_s_crequest_objkey,
+      <ls_fprop>  TYPE usmd_s_fprop,
+
+      <lt_data>   TYPE ANY TABLE,
+      <ls_hryobj> TYPE usmd_sx_hrynv_hrynod_chkey_fld.
+
+    DATA : ls_key_all         TYPE usmd_sx_entity_data,
+           ls_crequest_objkey TYPE usmd_s_crequest_objkey.
+
+
+    LOOP AT ets_crequest_objkey  INTO ls_crequest_objkey.
+
+      ls_key_all-entity =  ls_crequest_objkey-fieldname.
+      ls_key_all-r_data =  ls_crequest_objkey-r_data.
+      INSERT ls_key_all INTO TABLE et_key_all.
+      ASSIGN ls_key_all-r_data->* TO <lt_data>.
+
+
+      CHECK sy-subrc IS INITIAL.
+    ENDLOOP.
+    LOOP AT <lt_data> ASSIGNING <ls_data>.
+
+      ASSIGN COMPONENT 'MATERIAL' OF STRUCTURE <ls_data> TO FIELD-SYMBOL(<value>).
+
+    ENDLOOP.
+
+    IF sy-subrc = 0.
+
+ev_material = <value>.
+
+    ENDIF.
+
+
+
+
+*ls_crequest_objkey-r_data
+
+
+*WHILE 1 = 1. ENDWHILE.
+
+  ENDIF.
+
+
+
+ENDFUNCTION.
