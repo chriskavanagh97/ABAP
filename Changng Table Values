@@ -1,0 +1,95 @@
+REPORT Z_CHANGE_ZANNLB.
+
+
+
+DATA:
+      index type i,
+      length type i,
+      WA like ZANLB,
+      Table type STANDARD TABLE OF ZANLB.
+
+
+SELECTION-SCREEN Begin of BLOCK 1 WITH FRAME TITLE text-001.
+
+*SELECTION-SCREEN Comment 5(15) title.
+PARAMETERS pa_perfy  TYPE zanlb-perfy default 1.
+
+
+SELECTION-SCREEN END of BLOCK 1.
+
+
+*index = 1.
+
+SELECT * FROM anlb WHERE perfy = @pa_perfy INTO TABLE @DATA(test_anlb).
+
+  Length = lines( test_anlb ).
+
+  write length.
+
+Write: 'Fields with the perfy value:', pa_perfy.
+
+ULINE.
+
+write: / '|Mandt|BUKRS |ANLN1         |ANL2  |AFABE|'.
+ULINE.
+
+loop at test_anlb into wa.
+IF sy-subrc = 0.
+
+  Write:/ '|', wa-MANDT, '|', wa-BUKRS, '|', wa-ANLN1, '|', wa-ANLN2,'|', wa-AFABE, ' |'.
+
+ELSE.
+  Write 'No Record Found'.
+  ENDIF.
+
+  ENDLOOP.
+ ULINE.
+*--------------------------------------------------------------------------------------------------------------------------------------
+*
+*
+*--------------------------------------------------------------------------------------------------------------------------------------
+
+  SELECTION-SCREEN Begin of BLOCK 2 WITH FRAME TITLE text-001 .
+
+SELECTION-SCREEN Begin of Line.
+
+PARAMETERS: paperfy default 1.
+*SELECTION-SCREEN Comment 5(15) target.
+
+PARAMETERS: paperfy2 default 2.
+*SELECTION-SCREEN Comment 5(15) value.
+
+SELECTION-SCREEN END OF LINE.
+
+SELECTION-SCREEN END of BLOCK 2.
+
+FIELD-SYMBOLS <wa> type zanlb.
+*loop at test_anlb ASSIGNING FIELD-SYMBOL(<itab_zanlb>) where PERFY = '12'.
+*
+* <itab_zanlb>-PERFY = '2'.
+*
+*  ENDLOOP.
+*
+*  UPDATE ZANLB from <itab_zanlb>.
+
+loop at test_anlb into wa where perfy = '12'.
+
+  wa-PERFY = '2'.
+
+*modify test_anlb from wa transporting perfy.
+  ENDLOOP.
+
+  UPDATE  ZANLB from wa.
+
+loop at test_anlb assigning <wa> where perfy = '12'.
+<wa>-perfy = '2'.
+endloop.
+
+
+update zanlb from table test_anlb.
+
+
+""AT SELECTION-SCREEN OUTPUT.
+""  title = 'Perfy'.
+""  target = 'Perfy Value'.
+""  value = 'Desired value'.
