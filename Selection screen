@@ -1,0 +1,110 @@
+*&---------------------------------------------------------------------*
+*& Report Z_CHANGE_ZANLB
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT z_change_zanlb.
+
+TABLES: ZANLB.
+
+DATA:
+  index  TYPE i,
+  length TYPE i,
+  wa     LIKE zanlb,
+  Table  TYPE STANDARD TABLE OF zanlb.
+
+
+SELECTION-SCREEN BEGIN OF BLOCK 1 WITH FRAME TITLE TEXT-001.
+
+*SELECTION-SCREEN Comment 5(15) title.
+*  PARAMETERS pa_perfy  TYPE zanlb-perfy DEFAULT 1.
+SELECT-OPTIONS pa_perfy  FOR zanlb-perfy .
+
+
+SELECTION-SCREEN END OF BLOCK 1.
+
+
+*index = 1.
+
+*Ranges
+SELECT * FROM zanlb WHERE perfy in @pa_perfy INTO TABLE @DATA(test_anlb).
+
+Length = lines( test_anlb ).
+
+WRITE length.
+
+WRITE: 'Fields with the perfy value:', pa_perfy.
+
+ULINE.
+
+WRITE: / '|Mandt|BUKRS |ANLN1         |ANL2  |AFABE|'.
+ULINE.
+
+LOOP AT test_anlb INTO wa.
+  IF sy-subrc = 0.
+
+    WRITE:/ '|', wa-mandt, '|', wa-bukrs, '|', wa-anln1, '|', wa-anln2,'|', wa-afabe, ' |'.
+
+  ELSE.
+    WRITE 'No Record Found'.
+  ENDIF.
+
+ENDLOOP.
+ULINE.
+*--------------------------------------------------------------------------------------------------------------------------------------
+*
+*
+*--------------------------------------------------------------------------------------------------------------------------------------
+
+SELECTION-SCREEN BEGIN OF BLOCK 2 WITH FRAME TITLE TEXT-001 .
+
+  SELECTION-SCREEN BEGIN OF LINE.
+
+    SELECTION-SCREEN COMMENT 05(15) target.
+    PARAMETERS: paperfy Default 1.
+
+
+
+    SELECTION-SCREEN COMMENT 30(15) value.
+    PARAMETERS: paperfy2 DEFAULT 2.
+
+
+  SELECTION-SCREEN END OF LINE.
+
+SELECTION-SCREEN END OF BLOCK 2.
+
+FIELD-SYMBOLS <wa> TYPE zanlb.
+
+
+
+*loop at test_anlb ASSIGNING FIELD-SYMBOL(<itab_zanlb>) where PERFY = '12'.
+*
+* <itab_zanlb>-PERFY = '2'.
+*
+*  ENDLOOP.
+*
+*  UPDATE ZANLB from <itab_zanlb>.
+
+*loop at test_anlb into wa where perfy = '12'.
+*
+*  wa-PERFY = '2'.
+*
+**modify test_anlb from wa transporting perfy.
+*  ENDLOOP.
+*
+*  UPDATE  ZANLB from wa.
+
+
+
+*alternative Select *
+
+LOOP AT test_anlb ASSIGNING <wa> WHERE perfy = '02'.
+  <wa>-perfy = '01'.
+ENDLOOP.
+
+
+UPDATE zanlb FROM TABLE test_anlb.
+
+AT SELECTION-SCREEN OUTPUT.
+  value = 'Perfy value'.
+  target = 'Perfy target'.
