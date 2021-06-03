@@ -1,0 +1,61 @@
+
+You are a developer for an airline coporation that owns several airline carriers. You need to develop and object-
+orientied program that can manage airline carriers and their airlines. For this reason, you must be able to define classes attributes and methods.  
+*
+*
+*
+*
+REPORT zbc401_09_main.
+
+TYPE-POOLS icon.
+
+*Declaring local class ICL_Airplane
+CLASS icl_airplane DEFINITION. 
+
+ PUBLIC SECTION.
+
+*Defining the public instance method SET_ATTRIBUTES for setting private instance attributes.    
+METHODS:      set_attributes       
+ IMPORTING         
+ iv_name      TYPE string         
+ iv_planetype TYPE saplane-planetype,          
+display_attributes.    
+
+*defining the public instance method for displaying private instance attributes    
+CLASS-METHODS:      
+display_n_o_airplanes.  
+
+PRIVATE SECTION.    
+CONSTANTS: c_pos_1 TYPE i VALUE 10.
+
+*Decclaring the attributes to my local class    
+DATA: my_name      
+TYPE string,          my_planetype TYPE saplane-planetype.    
+CLASS-DATA:        gv_n_o_airplanes TYPE i.
+ENDCLASS.
+
+*Implementing the public instacne method ste_attributes in such a way
+*that the two instance attributes are set
+CLASS icl_airplane IMPLEMENTATION.  
+
+METHOD set_attributes.    
+my_name = iv_name.    
+my_planetype = iv_planetype.    
+gv_n_o_airplanes = gv_n_o_airplanes + 1.  
+ENDMETHOD.
+*Implementing the public instance method in such a way that 
+*the values of the to instance attributes are output as an ABAP list.  
+METHOD display_attributes.    
+WRITE: / icon_ws_plane AS ICON,      
+/ 'Name of Airplane'(001), AT c_pos_1 my_name,     
+ / 'Type of Airplane'(002), AT c_pos_1 my_planetype.  
+ENDMETHOD.
+
+*Implementing the public static method in such a way that the value
+*of the statis attributes is oputput in the abap list  
+METHOD display_n_o_airplanes.    
+SKIP.   
+ WRITE: / 'Number of airplanes:'(ca1),   
+ AT c_pos_1 gv_n_o_airplanes LEFT-JUSTIFIED . 
+ ENDMETHOD.
+ENDCLASS.
