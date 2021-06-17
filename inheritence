@@ -1,0 +1,384 @@
+REPORT z_ck_program.
+
+*=========================================================*
+*           CLASS ICL_airplane Definitiom
+*==========================================================
+*Declaring local class ICL_Airplane
+CLASS icl_airplane
+DEFINITION.
+  PUBLIC SECTION.
+
+
+*Defining a constructor with a suitable signature for the instances of the class
+    METHODS:
+      constructor
+        IMPORTING
+          iv_name      TYPE string
+          iv_planetype TYPE saplane-planetype
+        EXCEPTIONS
+          wrong_planetype,
+      display_attributes.
+*defining the public instance method for displaying private instance attributes
+    CLASS-METHODS:
+      class_constructor,
+      display_n_o_airplanes,
+      get_n_o_airplanes RETURNING VALUE(rv_count) TYPE  i.
+*I will change the visibility of c_pos_1 constant so that i can use it
+*in the subclass
+
+  PROTECTED SECTION.
+    CONSTANTS: c_pos_1 TYPE i VALUE 23.
+
+  PRIVATE SECTION.
+    TYPES:
+    ty_planetypes TYPE STANDARD TABLE OF saplane
+     WITH NON-UNIQUE KEY planetype.
+
+
+*Decclaring the attributes to my local class
+    DATA: my_name      TYPE string,
+          my_planetype TYPE saplane-planetype,
+          my_weight    TYPE saplane-weight,
+          my_tankcap   TYPE saplane-tankcap.
+
+    CLASS-DATA:
+      gv_n_o_airplanes TYPE i,
+      gv_count         TYPE i,
+      gt_planetypes    TYPE ty_planetypes.
+
+    CLASS-METHODS:
+      get_technical_attributes
+        IMPORTING
+          iv_type    TYPE saplane-planetype
+
+        EXPORTING
+
+          ev_weight  TYPE saplane-weight
+          ev_tankcap TYPE saplane-tankcap
+
+        EXCEPTIONS
+          wrong_planetype.
+
+ENDCLASS.
+
+*=============================================================================
+*                 Class icl_airplane  Implementation
+*=============================================================================
+*Implementing the constructor in such a way*that the two instance attributes are set
+CLASS icl_airplane IMPLEMENTATION.
+
+  METHOD class_constructor.
+    SELECT * FROM saplane INTO TABLE gt_planetypes.
+  ENDMETHOD.
+
+  METHOD get_technical_attributes.
+
+    DATA: ls_planetype TYPE saplane.
+
+    DATA: l_type TYPE saplane-planetype.
+    l_type = iv_type.
+    TRANSLATE l_type TO UPPER CASE.
+    READ TABLE gt_planetypes INTO ls_planetype
+     WITH TABLE KEY planetype = l_type
+     TRANSPORTING weight tankcap.
+    IF sy-subrc = 0.
+      ev_weight = ls_planetype-weight.
+      ev_tankcap = ls_planetype-tankcap.
+    ELSE.
+      RAISE wrong_planetype.
+    ENDIF.
+  ENDMETHOD.
+
+  METHOD constructor.
+*    DATA: ls_planetype TYPE saplane.
+
+    my_name = iv_name.
+    my_planetype = iv_planetype.
+*Calling technical attributes method from the constructor to
+*obtain the techical data and set the corresponding private attributes
+
+    get_technical_attributes(
+    EXPORTING
+      iv_type = iv_planetype
+      IMPORTING
+        ev_weight = my_weight
+        ev_tankcap = my_tankcap
+        EXCEPTIONS
+          wrong_planetype = 1 ).
+
+    IF sy-subrc <> 0.
+
+      RAISE wrong_planetype.
+    ELSE.
+*       my_weight = ls_planetype-weight.
+*       my_tankcap = ls_planetype-tankcap.
+
+      gv_n_o_airplanes = gv_n_o_airplanes + 1.
+    ENDIF.
+  ENDMETHOD.
+
+*Implementing the public instance method in such a way that
+*the values of the to instance attributes are output as an ABAP list.
+
+  METHOD
+    display_attributes.
+    WRITE: / icon_ws_plane AS ICON,
+    / 'Name of Airplane'(001), my_name,
+    / 'Type of Airplane'(002), my_planetype,
+    / 'Weight'(003), my_weight LEFT-JUSTIFIED,
+    /'Tank Capacity:'(004),my_tankcap LEFT-JUSTIFIED.
+  ENDMETHOD.
+
+*Implementing the public static method in such a way that the value
+*of the statis attributes is oputput in the abap list
+  METHOD display_n_o_airplanes.
+    SKIP.
+    WRITE:
+    / 'Number of airplanes:',
+    gv_n_o_airplanes LEFT-JUSTIFIED .
+
+  ENDMETHOD.
+
+  METHOD get_n_o_airplanes.
+    rv_count = gv_n_o_airplanes.
+  ENDMETHOD.
+
+ENDCLASS.
+
+
+*============================================================================
+*                Class Icl_passenger_plane Definition
+*============================================================================
+
+*Here you will define a new local class lcl_passenger_plane and
+*make it a subclass of the already existing lcl_airplane
+CLASS lcl_passenger_plane
+
+DEFINITION  INHERITING FROM icl_airplane.
+*Defining instance constructor
+  PUBLIC SECTION.
+
+    METHODS:
+      constructor
+        IMPORTING
+          iv_name      TYPE string
+          iv_planetype TYPE saplane-planetype
+          iv_seats     TYPE s_seatsmax
+
+        EXCEPTIONS
+          wrong_planetype,
+      display_attributes REDEFINITION .
+
+*Defining the PRIVATE instance attribute
+  PRIVATE SECTION.
+    DATA:
+          my_seats TYPE s_seatsmax.
+
+ENDCLASS.
+*=====================================================================================
+*                        class icl_passenger_plane Implementation
+*=====================================================================================
+
+*Implementing the instance constructor that assings value to all instance attributes
+
+CLASS lcl_passenger_plane IMPLEMENTATION.
+
+  METHOD constructor.
+    super->constructor(
+
+    EXPORTING
+      iv_name = iv_name
+      iv_planetype = iv_planetype
+
+      EXCEPTIONS        wrong_planetype = 1 ).
+
+    IF sy-subrc <> 0.
+      RAISE wrong_planetype.
+    ENDIF.
+
+    my_seats = iv_seats.
+
+  ENDMETHOD.
+
+*Here I will implement the display attribute method
+*to make sure that the output of specific attributes  is
+*alligned WITH the output from the super CLASS
+
+  METHOD display_attributes.
+
+    super->display_attributes( ).
+    WRITE:
+    / 'Max Seats:'(006), AT c_pos_1 my_seats LEFT-JUSTIFIED.
+    ULINE.
+
+  ENDMETHOD.
+
+ENDCLASS.
+
+*=====================================================================================
+*                        Class cargo_plane defimition
+*=====================================================================================
+*Here I will define the local subclass lcl_cargo_plane
+
+CLASS lcl_cargo_planes DEFINITION INHERITING FROM icl_airplane.
+
+*Here I will define a private instance attribute my_cargo with
+*the same type as the table field s_plan_car
+
+  PUBLIC SECTION.
+    METHODS:
+      constructor
+        IMPORTING
+          iv_name      TYPE string
+          iv_planetype TYPE saplane-planetype
+          iv_cargo     TYPE s_plan_car
+
+        EXCEPTIONS
+          wrong_planetype,
+      display_attributes REDEFINITION .
+
+*Defining the PRIVATE instance attribute
+
+  PRIVATE SECTION.
+    DATA:
+          my_cargo TYPE s_plan_car.
+
+ENDCLASS.
+
+*=====================================================================================
+*                    class icl_cargo_planes definition
+*=====================================================================================
+
+CLASS lcl_cargo_planes IMPLEMENTATION.
+  METHOD constructor.
+
+    super->constructor(
+    EXPORTING
+      iv_name = iv_name
+      iv_planetype = iv_planetype
+      EXCEPTIONS
+        wrong_planetype = 1 ).
+
+    IF sy-subrc <> 0.
+      RAISE wrong_planetype.
+    ENDIF.
+    my_cargo = iv_cargo.
+  ENDMETHOD.
+
+*Here I will implement the display attribute method
+*to make sure that the output of specific attributes  is
+*alligned WITH the output from the super CLASS
+  METHOD display_attributes.
+    super->display_attributes( ).
+    WRITE:
+    / 'Max Cargo:'(006), AT c_pos_1 my_cargo    LEFT-JUSTIFIED.
+    ULINE.
+  ENDMETHOD.
+ENDCLASS.
+
+*=====================================================================================
+*                        class icl_carrier definition
+*=====================================================================================
+
+CLASS icl_carrier DEFINITION.
+  PUBLIC SECTION.
+
+    METHODS:
+      constructor
+        IMPORTING iv_name TYPE string,
+      add_airplane IMPORTING io_plane TYPE REF TO icl_airplane,
+      display_attributes.
+
+  PRIVATE SECTION.
+    DATA:
+      my_name      TYPE string,
+      mt_airplanes TYPE TABLE OF REF TO icl_airplane.
+
+    METHODS:
+      display_airlines.
+
+ENDCLASS.
+
+*=====================================================================================
+*                                class icl_carrier  implementation
+*=====================================================================================
+
+CLASS icl_carrier IMPLEMENTATION.
+  METHOD
+    constructor.
+    my_name = iv_name.
+  ENDMETHOD.
+
+  METHOD add_airplane.
+    APPEND io_plane TO mt_airplanes.
+  ENDMETHOD.
+
+  METHOD display_attributes.
+    SKIP 2.
+    WRITE: icon_flight AS ICON,
+    my_name.
+    ULINE.
+    ULINE.
+    me->display_airlines( ).
+  ENDMETHOD.
+
+  METHOD display_airlines.
+    DATA: io_plane TYPE REF TO icl_airplane.
+    LOOP AT mt_airplanes INTO io_plane.
+      io_plane->display_attributes( ).
+    ENDLOOP.
+
+  ENDMETHOD.
+
+ENDCLASS.
+
+DATA: go_airplane  TYPE REF TO icl_airplane,
+      gt_airplanes TYPE TABLE OF REF TO icl_airplane,
+      gv_count     TYPE i,
+      go_cargo     TYPE REF TO lcl_cargo_planes,
+      go_passenger TYPE REF TO lcl_passenger_plane,
+      go_carrier   TYPE REF TO icl_carrier.
+
+*Start of selection inidicates where the executable part of the program will start
+START-OF-SELECTION.
+  icl_airplane=>display_n_o_airplanes( ).
+  CREATE OBJECT go_carrier
+    EXPORTING
+      iv_name = 'smile and fly'.
+
+*Calling the display attributes method for both instances
+
+  CREATE OBJECT go_passenger
+    EXPORTING
+      iv_name         = 'LH Berlin'
+      iv_planetype    = '747-400'
+      iv_seats        = 345
+    EXCEPTIONS
+      wrong_planetype = 1.
+  IF sy-subrc = 0.
+    APPEND go_passenger TO gt_airplanes.
+  ENDIF.
+
+  CREATE OBJECT go_cargo
+    EXPORTING
+      iv_name         = 'US Hercules'
+      iv_planetype    = '747-200f'
+      iv_cargo        = 533
+    EXCEPTIONS
+      wrong_planetype = 1.
+  IF sy-subrc = 0.
+    APPEND go_cargo TO gt_airplanes.
+  ENDIF.
+  go_carrier->display_attributes( ).
+  LOOP AT gt_airplanes INTO go_airplane.
+    go_airplane->display_attributes( ).
+
+  ENDLOOP.
+  gv_count =
+icl_airplane=>get_n_o_airplanes( ).
+
+*
+*
+*  gv_n_o_airplanes = icl_airplane=>get_n_o_airplanes( ).
+
+  WRITE:'Number of Airplanes:', gv_count.
